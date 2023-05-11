@@ -56,7 +56,7 @@ int32_t RangeTestModule::runOnce()
                 return (5000); // Sending first message 5 seconds after initilization.
             } else {
                 LOG_INFO("Initializing Range Test Module -- Receiver\n");
-                return (INT32_MAX);
+                return disable();
                 // This thread does not need to run as a receiver
             }
 
@@ -82,8 +82,6 @@ int32_t RangeTestModule::runOnce()
                 return disable();
                 // This thread does not need to run as a receiver
             }
-
-
         }
     } else {
         LOG_INFO("Range Test Module - Disabled\n");
@@ -93,17 +91,9 @@ int32_t RangeTestModule::runOnce()
     return disable();
 }
 
-MeshPacket *RangeTestModuleRadio::allocReply()
-{
-
-    auto reply = allocDataPacket(); // Allocate a packet for sending
-
-    return reply;
-}
-
 void RangeTestModuleRadio::sendPayload(NodeNum dest, bool wantReplies)
 {
-    MeshPacket *p = allocReply();
+    meshtastic_MeshPacket *p = allocDataPacket();
     p->to = dest;
     p->decoded.want_response = wantReplies;
 
@@ -123,7 +113,7 @@ void RangeTestModuleRadio::sendPayload(NodeNum dest, bool wantReplies)
     powerFSM.trigger(EVENT_CONTACT_FROM_PHONE);
 }
 
-ProcessMessage RangeTestModuleRadio::handleReceived(const MeshPacket &mp)
+ProcessMessage RangeTestModuleRadio::handleReceived(const meshtastic_MeshPacket &mp)
 {
 #ifdef ARCH_ESP32
 
@@ -178,11 +168,11 @@ ProcessMessage RangeTestModuleRadio::handleReceived(const MeshPacket &mp)
     return ProcessMessage::CONTINUE; // Let others look at this message also if they want
 }
 
-bool RangeTestModuleRadio::appendFile(const MeshPacket &mp)
+bool RangeTestModuleRadio::appendFile(const meshtastic_MeshPacket &mp)
 {
     auto &p = mp.decoded;
 
-    NodeInfo *n = nodeDB.getNode(getFrom(&mp));
+    meshtastic_NodeInfo *n = nodeDB.getNode(getFrom(&mp));
     /*
         LOG_DEBUG("-----------------------------------------\n");
         LOG_DEBUG("p.payload.bytes  \"%s\"\n", p.payload.bytes);
@@ -236,7 +226,7 @@ bool RangeTestModuleRadio::appendFile(const MeshPacket &mp)
         } else {
             LOG_ERROR("File write failed\n");
         }
-
+        fileToWrite.flush();
         fileToWrite.close();
     }
 
@@ -285,6 +275,7 @@ bool RangeTestModuleRadio::appendFile(const MeshPacket &mp)
 
     // TODO: If quotes are found in the payload, it has to be escaped.
     fileToAppend.printf("\"%s\"\n", p.payload.bytes);
+    fileToAppend.flush();
     fileToAppend.close();
 
     return 1;
