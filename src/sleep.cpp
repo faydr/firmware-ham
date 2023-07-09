@@ -99,17 +99,21 @@ void setGPSPower(bool on)
 {
     LOG_INFO("Setting GPS power=%d\n", on);
 
+#ifdef PIN_GPS_EN
+    digitalWrite(PIN_GPS_EN, on ? 1 : 0);
+#endif
+
 #ifdef HAS_PMU
     if (pmu_found && PMU) {
         uint8_t model = PMU->getChipModel();
         if (model == XPOWERS_AXP2101) {
-#if (HW_VENDOR == meshtastic_HardwareModel_TBEAM)
-            // t-beam v1.2 GNSS power channel
-            on ? PMU->enablePowerOutput(XPOWERS_ALDO3) : PMU->disablePowerOutput(XPOWERS_ALDO3);
-#elif (HW_VENDOR == meshtastic_HardwareModel_LILYGO_TBEAM_S3_CORE)
-            // t-beam-s3-core GNSS  power channel
-            on ? PMU->enablePowerOutput(XPOWERS_ALDO4) : PMU->disablePowerOutput(XPOWERS_ALDO4);
-#endif
+            if (HW_VENDOR == meshtastic_HardwareModel_TBEAM) {
+                // t-beam v1.2 GNSS power channel
+                on ? PMU->enablePowerOutput(XPOWERS_ALDO3) : PMU->disablePowerOutput(XPOWERS_ALDO3);
+            } else if (HW_VENDOR == meshtastic_HardwareModel_LILYGO_TBEAM_S3_CORE) {
+                // t-beam-s3-core GNSS  power channel
+                on ? PMU->enablePowerOutput(XPOWERS_ALDO4) : PMU->disablePowerOutput(XPOWERS_ALDO4);
+            }
         } else if (model == XPOWERS_AXP192) {
             // t-beam v1.1 GNSS  power channel
             on ? PMU->enablePowerOutput(XPOWERS_LDO3) : PMU->disablePowerOutput(XPOWERS_LDO3);
@@ -132,6 +136,7 @@ void initDeepSleep()
       support busted boards, assume button one was pressed wakeButtons = ((uint64_t)1) << buttons.gpios[0];
       */
 
+#ifdef DEBUG_PORT
     // If we booted because our timer ran out or the user pressed reset, send those as fake events
     const char *reason = "reset"; // our best guess
     RESET_REASON hwReason = rtc_get_reset_reason(0);
@@ -149,6 +154,7 @@ void initDeepSleep()
         reason = "timeout";
 
     LOG_INFO("Booted, wake cause %d (boot count %d), reset_reason=%s\n", wakeCause, bootCount, reason);
+#endif
 #endif
 }
 
@@ -183,7 +189,7 @@ static void waitEnterSleep()
 
 void doGPSpowersave(bool on)
 {
-#ifdef HAS_PMU
+#if defined(HAS_PMU) || defined(PIN_GPS_EN)
     if (on) {
         LOG_INFO("Turning GPS back on\n");
         gps->forceWake(1);
@@ -250,12 +256,12 @@ void doDeepSleep(uint32_t msecToWake)
 
         uint8_t model = PMU->getChipModel();
         if (model == XPOWERS_AXP2101) {
-#if (HW_VENDOR == meshtastic_HardwareModel_TBEAM)
-            // t-beam v1.2 radio power channel
-            PMU->disablePowerOutput(XPOWERS_ALDO2); // lora radio power channel
-#elif (HW_VENDOR == meshtastic_HardwareModel_LILYGO_TBEAM_S3_CORE)
-            PMU->disablePowerOutput(XPOWERS_ALDO3); // lora radio power channel
-#endif
+            if (HW_VENDOR == meshtastic_HardwareModel_TBEAM) {
+                // t-beam v1.2 radio power channel
+                PMU->disablePowerOutput(XPOWERS_ALDO2); // lora radio power channel
+            } else if (HW_VENDOR == meshtastic_HardwareModel_LILYGO_TBEAM_S3_CORE) {
+                PMU->disablePowerOutput(XPOWERS_ALDO3); // lora radio power channel
+            }
         } else if (model == XPOWERS_AXP192) {
             // t-beam v1.1 radio power channel
             PMU->disablePowerOutput(XPOWERS_LDO2); // lora radio power channel
@@ -329,23 +335,27 @@ esp_sleep_wakeup_cause_t doLightSleep(uint64_t sleepMsec) // FIXME, use a more r
         gpio_wakeup_enable((gpio_num_t)PMU_IRQ, GPIO_INTR_LOW_LEVEL); // pmu irq
 #endif
     auto res = esp_sleep_enable_gpio_wakeup();
-    if (res != ESP_OK)
+    if (res != ESP_OK) {
         LOG_DEBUG("esp_sleep_enable_gpio_wakeup result %d\n", res);
+    }
     assert(res == ESP_OK);
     res = esp_sleep_enable_timer_wakeup(sleepUsec);
-    if (res != ESP_OK)
+    if (res != ESP_OK) {
         LOG_DEBUG("esp_sleep_enable_timer_wakeup result %d\n", res);
+    }
     assert(res == ESP_OK);
     res = esp_light_sleep_start();
-    if (res != ESP_OK)
+    if (res != ESP_OK) {
         LOG_DEBUG("esp_light_sleep_start result %d\n", res);
+    }
     assert(res == ESP_OK);
 
     esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
 #ifdef BUTTON_PIN
-    if (cause == ESP_SLEEP_WAKEUP_GPIO)
+    if (cause == ESP_SLEEP_WAKEUP_GPIO) {
         LOG_INFO("Exit light sleep gpio: btn=%d\n",
                  !digitalRead(config.device.button_gpio ? config.device.button_gpio : BUTTON_PIN));
+    }
 #endif
 
     return cause;

@@ -54,6 +54,8 @@ typedef enum _meshtastic_PortNum {
     /* Audio Payloads.
  Encapsulated codec2 packets. On 2.4 GHZ Bandwidths only for now */
     meshtastic_PortNum_AUDIO_APP = 9,
+    /* Payloads for clients with a network connection proxying MQTT pub/sub to the device */
+    meshtastic_PortNum_MQTT_CLIENT_PROXY_APP = 10,
     /* Provides a 'ping' service that replies to any packet it receives.
  Also serves as a small example module. */
     meshtastic_PortNum_REPLY_APP = 32,
@@ -77,9 +79,9 @@ typedef enum _meshtastic_PortNum {
  Maintained by Github user a-f-G-U-C (a Meshtastic contributor)
  Project files at https://github.com/a-f-G-U-C/Meshtastic-ZPS */
     meshtastic_PortNum_ZPS_APP = 68,
-    /* Used to let multiple instances of Linux native applications communicate 
+    /* Used to let multiple instances of Linux native applications communicate
  as if they did using their LoRa chip.
- Maintained by GitHub user GUVWAF. 
+ Maintained by GitHub user GUVWAF.
  Project files at https://github.com/GUVWAF/Meshtasticator */
     meshtastic_PortNum_SIMULATOR_APP = 69,
     /* Provides a traceroute functionality to show the route a packet towards

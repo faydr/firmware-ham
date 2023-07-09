@@ -10,8 +10,8 @@
 
 #include "main.h"
 
-#ifdef RAK4630
-#include <NCP5623.h>
+#ifdef HAS_NCP5623
+#include <graphics/RAKled.h>
 NCP5623 rgb;
 
 uint8_t red = 0;
@@ -84,7 +84,7 @@ int32_t ExternalNotificationModule::runOnce()
                 millis()) {
                 getExternal(2) ? setExternalOff(2) : setExternalOn(2);
             }
-#ifdef RAK4630
+#ifdef HAS_NCP5623
             if (rgb_found.type == ScanI2C::NCP5623) {
                 green = (green + 50) % 255;
                 red = abs(red - green) % 255;
@@ -127,7 +127,7 @@ void ExternalNotificationModule::setExternalOn(uint8_t index)
         digitalWrite(output, (moduleConfig.external_notification.active ? true : false));
         break;
     }
-#ifdef RAK4630
+#ifdef HAS_NCP5623
     if (rgb_found.type == ScanI2C::NCP5623) {
         rgb.setColor(red, green, blue);
     }
@@ -153,7 +153,7 @@ void ExternalNotificationModule::setExternalOff(uint8_t index)
         break;
     }
 
-#ifdef RAK4630
+#ifdef HAS_NCP5623
     if (rgb_found.type == ScanI2C::NCP5623) {
         red = 0;
         green = 0;
@@ -235,7 +235,7 @@ ExternalNotificationModule::ExternalNotificationModule()
                 LOG_INFO("Using Pin %i in PWM mode\n", config.device.buzzer_gpio);
             }
         }
-#ifdef RAK4630
+#ifdef HAS_NCP5623
         if (rgb_found.type == ScanI2C::NCP5623) {
             rgb.begin();
             rgb.setCurrent(10);
